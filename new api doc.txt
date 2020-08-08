@@ -1,0 +1,155 @@
+language api 
+
+url = https://3.19.26.117:8000/api/language 
+
+post method 
+
+{
+    name:
+    image:
+}
+
+response 
+{
+   id
+   name
+   image
+   status
+   created_at
+}
+
+
+get method 
+
+all language response 
+{
+   id
+   name
+   image
+   status
+   created_at
+}
+
+on the basic of name 
+pass name in url 
+response 
+{
+   id
+   name
+   image
+   status
+   created_at
+}
+
+
+
+Finding_Video_By_Hashtag
+
+
+get method
+url = https://3.19.26.117:8000/api/hash_video
+
+this get method work on the basis of hashtag, user_id , hastag_id
+
+for hastag pass value hastag in the url
+for user_id pass value user_id in the url
+for hastag_id pass value id in the url
+
+response 
+{
+    "id":
+    "user_id":,
+    "username",
+    "audiofile_name",
+    "audio_file",
+    "videofile_name",
+    "video_file",
+    "hash_tag",
+}
+
+
+updated video api 
+
+url= http://3.19.26.117:8000/api/videos/
+
+for post method 
+
+"NOTE:- pass here audio file id
+audiofile                   
+videofile_name
+video_file"
+video_despcription
+
+response
+
+"{
+    ""id"": 2,
+    ""videofile_name"": ""testing name"",
+    ""video_file"": ""/media/video/videoplayback_OPOXevq.mp4"",
+    ""status"": true,
+    ""created_at"": ""2020-07-10T05:48:20.067513Z"",
+    ""audiofile"": 1,
+    ""user"": 13
+    "video_despcription" : 
+}"
+
+
+
+get method 
+
+
+"[
+    {
+        ""id"": 1,
+        ""user_id"": 13,
+        ""username"": ""vicky123"",
+        ""audiofile_name"": ""testing1"",
+        ""audio_file"": ""/media/audio/Agneepath_2012_Rishi_Kapoor_Dialogue_Ringtone.mp3"",
+        ""videofile_name"": ""testing name"",
+        ""video_file"": ""/media/video/videoplayback.mp4"",
+        "video_despcription" : 
+        ""status"": true,
+        ""created_at"": ""2020-07-09"",
+        ""likes_count"": 1,
+        ""heart_count"": 1,
+        ""comments_count"": 1,
+        ""share_count"": 1,
+        ""liked_status"": true,
+        ""heart_status"": true
+    }
+]"
+
+
+
+put method 
+
+"audiofile
+videofile_name
+video_file
+video_despcription"
+
+url = http://3.19.26.117:8000/api/videos/?id=1
+
+
+
+
+"[
+    {
+        ""id"": 1,
+        ""user_id"": 13,
+        ""username"": ""vicky123"",
+        ""audiofile_name"": ""testing1"",
+        ""audio_file"": ""/media/audio/Agneepath_2012_Rishi_Kapoor_Dialogue_Ringtone.mp3"",
+        ""videofile_name"": ""testing name"",
+        ""video_file"": ""/media/video/videoplayback.mp4"",
+        "video_despcription" : 
+        ""status"": true,
+        ""created_at"": ""2020-07-09"",
+        ""likes_count"": 1,
+        ""heart_count"": 1,
+        ""comments_count"": 1,
+        ""share_count"": 1,
+        ""liked_status"": true,
+        ""heart_status"": true
+    }
+]"

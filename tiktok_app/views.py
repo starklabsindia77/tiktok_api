@@ -402,25 +402,24 @@ class VideoViews(APIView):
 	def post(self, request, format='json'):
 		if not request.POST._mutable:
 			request.POST._mutable = True
-			data = request.data		
-			data['status'] = True
-			data['user'] = request.user.id		
-			serializer = VideosSerialzers(data = data)
-			discription=data["video_discription"]
-			list_discription=discription.split(" ")
-			extract_list=[]
-			for list_item in list_discription:
-				start_with_hash=re.search("^#",list_item)
-				if start_with_hash:
-					extract_list.append(list_item)
-				else:
-					pass
-			for item in extract_list:
-				if Hastag.objects.filter(name__iexact=item).exists():
-					obj,created=Hastag.objects.get_or_create(count=1,user=request.user,name=item)
-				else:
-					obj,created=Hastag.objects.get_or_create(name=item,user=request.user)
-
+		data = request.data		
+		data['status'] = True
+		data['user'] = request.user.id		
+		serializer = VideosSerialzers(data = data)
+		discription=data["video_discription"]
+		list_discription=discription.split(" ")
+		extract_list=[]
+		for list_item in list_discription:
+			start_with_hash=re.search("^#",list_item)
+			if start_with_hash:
+				extract_list.append(list_item)
+			else:
+				pass
+		for item in extract_list:
+			if Hastag.objects.filter(name__iexact=item).exists():
+				obj,created=Hastag.objects.get_or_create(count=1,user=request.user,name=item)
+			else:
+				obj,created=Hastag.objects.get_or_create(name=item,user=request.user)
 		if serializer.is_valid():
 			serializer.save()
 			return Response(serializer.data, status=status.HTTP_200_OK)
@@ -444,6 +443,7 @@ class VideoViews(APIView):
 								"audiofile_name":data.audiofile.audiofile_name,
 								"audio_file":data.audiofile.audio_file.url if data.audiofile.audio_file else None,
 								"videofile_name":data.videofile_name,
+								"video_discription":data.video_discription,
 								"video_file":data.video_file.url if data.video_file else None,
 								"status":data.status,
 								"created_at":data.created_at.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d"),
@@ -488,10 +488,33 @@ class VideoViews(APIView):
 				serializer = VideosSerialzers(queryset, data=data, partial=True)
 		except:
 			serializer = VideosSerialzers(queryset, data=data, partial=True)
-		if serializer.is_valid():
-			serializer.save()
-			return Response(serializer.data, status=status.HTTP_200_OK)
-		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+		
+		discription=data["video_discription"]
+
+		if discription == '':
+			if serializer.is_valid():
+				serializer.save()
+				return Response(serializer.data, status=status.HTTP_200_OK)
+			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)		
+		else:
+			list_discription=discription.split(" ")
+			extract_list=[]
+			for list_item in list_discription:
+				start_with_hash=re.search("^#",list_item)
+				if start_with_hash:
+					extract_list.append(list_item)
+				else:
+					pass
+			for item in extract_list:
+				if Hastag.objects.filter(name__iexact=item).exists():
+					obj,created=Hastag.objects.get_or_create(count=1,user=request.user,name=item)
+				else:
+					obj,created=Hastag.objects.get_or_create(name=item,user=request.user)
+			if serializer.is_valid():
+				serializer.save()
+				return Response(serializer.data, status=status.HTTP_200_OK)
+			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+		
 
 	def delete(self, request):
 		queryset = get_object_or_404(VideoFile, id=request.GET.get('id'))

@@ -125,6 +125,13 @@ class Hastag(models.Model):
 
 
 class language(models.Model):
-	name     = models.CharField(max_length=500, null=True)
-	image    = models.ImageField(null=True, blank=True, upload_to='image/')
-	status   = models.BooleanField(default=True) 
+	name       = models.CharField(max_length=500, null=True)
+	image      = models.ImageField(null=True, blank=True, upload_to='image/')
+	status     = models.BooleanField(default=True)
+	created_at = models.DateTimeField(auto_now_add=True,  blank=True)
+
+	def __str__(self):
+		return "%s" %(self.name)
+
+
+
