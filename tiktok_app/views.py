@@ -717,7 +717,7 @@ def compression():
 
 			if endwebm!=None:
 				input_file=location+"/"+files
-				output_file=settings.MEDIA_ROOT+"/video"+"/"+"compresssed_"+files
+				output_file=settings.MEDIA_ROOT+"/video"+"/"+files
 				com_file = FFmpeg(inputs={input_file: None},outputs={output_file: '-crf 44'})
 				com_file.run()
 				return output_file
@@ -725,7 +725,7 @@ def compression():
 
 			if endavi!=None:
 				input_file=location+"/"+files
-				output_file=settings.MEDIA_ROOT+"/video"+"/"+"compresssed_"+files
+				output_file=settings.MEDIA_ROOT+"/video"+"/"+files
 				com_file = FFmpeg(inputs={input_file: None},outputs={output_file: '-crf 44'})
 				com_file.run()
 				return output_file
