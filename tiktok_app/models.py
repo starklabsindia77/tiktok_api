@@ -41,7 +41,7 @@ class VideoFile(models.Model):
 	audiofile       	=  models.ForeignKey(AudioFile, on_delete=models.CASCADE)
 	user            	=  models.ForeignKey(User, on_delete=models.CASCADE)
 	videofile_name      =  models.CharField(max_length=500, null=True)
-	video_file          =  models.FileField(blank=True, null=True, upload_to='video/')
+	video_file          =  models.CharField(max_length=500, null=True)
 	video_discription   =  models.CharField( max_length=1000,null=True,blank=True)
 	status              =  models.BooleanField(default=True)
 	created_at          =  models.DateTimeField(auto_now_add=True, blank=True)
@@ -128,10 +128,14 @@ class language(models.Model):
 	name       = models.CharField(max_length=500, null=True)
 	image      = models.ImageField(null=True, blank=True, upload_to='image/')
 	status     = models.BooleanField(default=True)
-	created_at = models.DateTimeField(auto_now_add=True,  blank=True)
+	created_at = models.DateTimeField(auto_now_add=True, blank=True)
 
 	def __str__(self):
 		return "%s" %(self.name)
+
+
+
+
 
 
 

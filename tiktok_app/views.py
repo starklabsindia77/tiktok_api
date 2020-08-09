@@ -404,7 +404,16 @@ class VideoViews(APIView):
 			request.POST._mutable = True
 		data = request.data		
 		data['status'] = True
-		data['user'] = request.user.id		
+		data['user'] = request.user.id
+		file = request.FILES['video_file']
+		fs = FileSystemStorage(location='static/media/temp/') #defaults to   MEDIA_ROOT
+		filename = fs.save(file.name,file )
+		compress_file = compression()
+		print(compress_file)
+		com = compress_file.split("static")
+		print(com[0])
+		print(com[1])
+		data['video_file'] = com[1]	
 		serializer = VideosSerialzers(data = data)
 		discription=data["video_discription"]
 		list_discription=discription.split(" ")
@@ -444,7 +453,7 @@ class VideoViews(APIView):
 								"audio_file":data.audiofile.audio_file.url if data.audiofile.audio_file else None,
 								"videofile_name":data.videofile_name,
 								"video_discription":data.video_discription,
-								"video_file":data.video_file.url if data.video_file else None,
+								"video_file":data.video_file,
 								"status":data.status,
 								"created_at":data.created_at.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d"),
 								"likes_count": len(VideoLike.objects.filter(videofile__id=data.id)),
@@ -474,7 +483,7 @@ class VideoViews(APIView):
 
 		return Response(response.values(), status=status.HTTP_200_OK)	
 
-	def put(self, request):
+	""" def put(self, request):
 		if not request.POST._mutable:
 			request.POST._mutable = True
 		pk =  request.GET.get('id')
@@ -513,7 +522,7 @@ class VideoViews(APIView):
 			if serializer.is_valid():
 				serializer.save()
 				return Response(serializer.data, status=status.HTTP_200_OK)
-			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) """
 		
 
 	def delete(self, request):
@@ -689,20 +698,6 @@ class Mp3Trim(APIView):
 
 		return Response({"cutting_mp3": '/media/temp/'+file_name[-1],"total_time_of_audio":trim_audio_total_time}, status=status.HTTP_200_OK)
 
-'''temporary file upload'''
-class FileUpload(APIView):
-	"""docstring for FileUpload"""
-	def post(self,request):
-		name=request.data.get('name')
-		file = request.FILES['file']
-		fs = FileSystemStorage(location='static/media/temp/') #defaults to   MEDIA_ROOT
-		filename = fs.save(file.name,file )
-		compression()
-		file_url = fs.path(filename)
-		file_name = file_url.split('/')
-
-		return Response({"videofile uploaded into temp folder": '/media/temp/'+file_name[-1],"name":name}, status=status.HTTP_200_OK)
-
 
 '''compression function for video'''
 def compression():
@@ -714,10 +709,10 @@ def compression():
 		try:
 			if endmp4!=None:
 				input_file=location+"/"+files
-				output_file=settings.MEDIA_ROOT+"/video"+"/"+"compresssed_"+files
+				output_file=settings.MEDIA_ROOT+"video"+"/"+files
 				com_file = FFmpeg(inputs={input_file: None},outputs={output_file: '-crf 44'})
 				com_file.run()
-				break
+				return output_file
 			
 
 			if endwebm!=None:
@@ -725,7 +720,7 @@ def compression():
 				output_file=settings.MEDIA_ROOT+"/video"+"/"+"compresssed_"+files
 				com_file = FFmpeg(inputs={input_file: None},outputs={output_file: '-crf 44'})
 				com_file.run()
-				break
+				return output_file
 			
 
 			if endavi!=None:
@@ -733,7 +728,7 @@ def compression():
 				output_file=settings.MEDIA_ROOT+"/video"+"/"+"compresssed_"+files
 				com_file = FFmpeg(inputs={input_file: None},outputs={output_file: '-crf 44'})
 				com_file.run()
-				break
+				return output_file
 			
 
 
@@ -773,25 +768,6 @@ def temp_delete():
 
 	return files
 
-'''After compressed store into database'''
-def save_com_file():
-	data=settings.MEDIA_ROOT+"/video"
-	for files in os.listdir(data):
-		if VideoFile.objects.filter(video_file__iexact=files).exists():
-			print("files exist")
-
-		if VideoFile.objects.filter(video_file__iexact=files).exists():
-				print("files exist")
-
-		else:
-			obj,created=VideoFile.objects.get_or_create(video_file=settings.MEDIA_ROOT+"/save"+"/"+files)
-			obj.save()
-			print("file save into database successfully")
-			break
-
-		
-
-	return files
 
 
 #Cannot resolve keyword 'document' into field. Choices are: audiofile, audiofile_id, created_at, id, status, user, user_id, video_file, videocomment, videofile_name, videoheart, videolike, videoshare
@@ -815,8 +791,7 @@ class Hash_Updata(APIView):
 				"username":data.user.username,
 				"hash_tag_name":data.name,
 				"hash_tag_count":data.count,
-				"hash_status":data.status,
-				
+				"hash_status":data.status,				
 			}
 
 		return Response(response.values(), status=status.HTTP_200_OK)
@@ -915,3 +890,6 @@ class language(APIView):
 			}
 
 		return Response(response.values(), status=status.HTTP_200_OK)
+
+	
+
