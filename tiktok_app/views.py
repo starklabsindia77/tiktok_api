@@ -10,9 +10,9 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 import uuid
 from django.db.models import Q
-from TikTok_App.send_otp import *
-from TikTok_App.models import *
-from TikTok_App.serializers import *
+from tiktok_app.send_otp import *
+from tiktok_app.models import *
+from tiktok_app.serializers import *
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from pydub import AudioSegment
@@ -22,7 +22,7 @@ from ffmpy3 import FFmpeg
 import ffmpy3
 import os
 import re
-from TikTok_App.models import VideoFile,Hastag
+from tiktok_app.models import language, VideoFile, Hastag
 
 
 def generate_otp():
@@ -402,67 +402,53 @@ class VideoViews(APIView):
 	def post(self, request, format='json'):
 		if not request.POST._mutable:
 			request.POST._mutable = True
-			data = request.data	
-			temp_delete()	
-			data['status'] = True
-			data['user'] = request.user.id		
-			
-			
-			video_file=request.FILES["video_file"]
-			fs = FileSystemStorage(location='static/media/temp/') #defaults to   MEDIA_ROOT
-			filename = fs.save(video_file.name,video_file )
-			audio_id=request.data["audiofile"]
-			
-			path=settings.MEDIA_ROOT[0:52]
-			
-			'''FETCH AUDIO FILE'''
-			audio_file=AudioFile.objects.filter(id=audio_id)	
-			for i in audio_file:
-				audio=i.audio_file.url
-				audio1=path+audio
+		data = request.data	
+		temp_delete()	
+		data['status'] = True
+		data['user'] = request.user.id
+		video_file=request.FILES["video_file"]
+		fs = FileSystemStorage(location='static/media/temp/') #defaults to   MEDIA_ROOT
+		filename = fs.save(video_file.name,video_file )
+		audio_id=request.data["audiofile"]		
+		path=settings.MEDIA_ROOT[0:52]			
+		'''FETCH AUDIO FILE'''
+		audio_file=AudioFile.objects.filter(id=audio_id)	
+		for i in audio_file:
+			audio=i.audio_file.url
+			audio1=path+audio
 
-				'''FETCH TEMPORARY VIDEO FILES'''
-				store=settings.MEDIA_ROOT+"temp"
-				for files in os.listdir(store):
-					input_file=store+"/"+files
-					audio_file=audio1
-					output_file=path+"/"+"media/"+"save"+"/"+"merge_"+files
+		'''FETCH TEMPORARY VIDEO FILES'''
+		store=settings.MEDIA_ROOT+"temp"
+		for files in os.listdir(store):
+			input_file=store+"/"+files
+			audio_file=audio1
+			output_file=path+"/"+"media/"+"save"+"/"+"merge_"+files
 
-					'''COMMAND FOR MERGE AUDIO AND VIDEO FILES'''
-					com_file = FFmpeg(inputs={input_file: None,audio_file:None},outputs={output_file: '-shortest'})
-					com_file.run()
-				
-			compressed_file=compression()
-			print(compressed_file)
-			comp=compressed_file.split("static")
-			
-			
-			data['video_file'] = comp[1]
-			serializer = VideosSerialzers(data = data)
-			discription=data["video_discription"]
-			list_discription=discription.split(" ")
-			extract_list=[]
-			counting=0
-			for list_item in list_discription:
-				start_with_hash=re.search("^#",list_item)
-				if start_with_hash:
-					extract_list.append(list_item)
-				else:
-					pass
-		
+		'''COMMAND FOR MERGE AUDIO AND VIDEO FILES'''
+		com_file = FFmpeg(inputs={input_file: None,audio_file:None},outputs={output_file: '-shortest'})
+		com_file.run()				
+		compressed_file=compression()
+		print(compressed_file)
+		comp=compressed_file.split("static")		
+		data['video_file'] = comp[1]
+		serializer = VideosSerialzers(data = data)
+		discription=data["video_discription"]
+		list_discription=discription.split(" ")
+		extract_list=[]
+		for list_item in list_discription:
+			start_with_hash=re.search("^#",list_item)
+			if start_with_hash:
+				extract_list.append(list_item)
+			else:
+				pass
+		for item in extract_list:
+			if Hastag.objects.filter(name__iexact=item).exists():
+				obj,created=Hastag.objects.get_or_create(count=1,user=request.user,name=item)
+			else:
+				obj,created=Hastag.objects.get_or_create(name=item,user=request.user)
 		if serializer.is_valid():
-			comment=serializer.save()
-			'''HASH TAG CREATE'''
-			for item in extract_list:
-				if Hastag.objects.filter(name__iexact=item).exists():
-					counting=counting+1
-					obj,created=Hastag.objects.get_or_create(count=counting,user=request.user,video_id=comment.id)
-				else:
-					obj,created=Hastag.objects.get_or_create(name=item,user=request.user,count=counting,video_id=comment.id)
-
-			
+			serializer.save()
 			return Response(serializer.data, status=status.HTTP_200_OK)
-			
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 	def get(self, request, format='json'):
@@ -483,7 +469,8 @@ class VideoViews(APIView):
 								"audiofile_name":data.audiofile.audiofile_name,
 								"audio_file":data.audiofile.audio_file.url if data.audiofile.audio_file else None,
 								"videofile_name":data.videofile_name,
-								"video_file":data.video_file.url if data.video_file else None,
+								"video_discription":data.video_discription,
+								"video_file":data.video_file,
 								"status":data.status,
 								"created_at":data.created_at.astimezone(pytz.timezone("Asia/Kolkata")).strftime("%Y-%m-%d"),
 								"likes_count": len(VideoLike.objects.filter(videofile__id=data.id)),
@@ -513,7 +500,7 @@ class VideoViews(APIView):
 
 		return Response(response.values(), status=status.HTTP_200_OK)	
 
-	def put(self, request):
+	""" def put(self, request):
 		if not request.POST._mutable:
 			request.POST._mutable = True
 		pk =  request.GET.get('id')
@@ -527,10 +514,33 @@ class VideoViews(APIView):
 				serializer = VideosSerialzers(queryset, data=data, partial=True)
 		except:
 			serializer = VideosSerialzers(queryset, data=data, partial=True)
-		if serializer.is_valid():
-			serializer.save()
-			return Response(serializer.data, status=status.HTTP_200_OK)
-		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+		
+		discription=data["video_discription"]
+
+		if discription == '':
+			if serializer.is_valid():
+				serializer.save()
+				return Response(serializer.data, status=status.HTTP_200_OK)
+			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)		
+		else:
+			list_discription=discription.split(" ")
+			extract_list=[]
+			for list_item in list_discription:
+				start_with_hash=re.search("^#",list_item)
+				if start_with_hash:
+					extract_list.append(list_item)
+				else:
+					pass
+			for item in extract_list:
+				if Hastag.objects.filter(name__iexact=item).exists():
+					obj,created=Hastag.objects.get_or_create(count=1,user=request.user,name=item)
+				else:
+					obj,created=Hastag.objects.get_or_create(name=item,user=request.user)
+			if serializer.is_valid():
+				serializer.save()
+				return Response(serializer.data, status=status.HTTP_200_OK)
+			return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST) """
+		
 
 	def delete(self, request):
 		queryset = get_object_or_404(VideoFile, id=request.GET.get('id'))
@@ -650,14 +660,9 @@ class UserFollowView(APIView):
 
 	def get(self,request,format="json"):
 		user = User.objects.get(username = request.user)
-		print(user)
 		my_follower_dict = {}
-
 		my_followings_dict = {}
-
-
 		my_follower = FollowUser.objects.filter(following=request.user)
-
 		for user in my_follower:
 			user_details = UserDetails.objects.get(user__id=user.follower.id)
 			my_follower_dict[user.follower.username] = {
@@ -668,7 +673,6 @@ class UserFollowView(APIView):
 			}
 
 		my_following = FollowUser.objects.filter(follower=request.user)
-
 		for user in my_following:
 			user_details = UserDetails.objects.get(user__id=user.following.id)
 			my_followings_dict[user.following.username] = {
@@ -712,9 +716,6 @@ class Mp3Trim(APIView):
 		return Response({"cutting_mp3": '/media/temp/'+file_name[-1],"total_time_of_audio":trim_audio_total_time}, status=status.HTTP_200_OK)
 
 
-
-
-
 '''compression function for video'''
 def compression():
 	location=settings.MEDIA_ROOT+"/save"
@@ -746,30 +747,22 @@ def compression():
 				com_file = FFmpeg(inputs={input_file: None},outputs={output_file: '-crf 44'})
 				com_file.run()
 				return output_file
-			
-
-
-
-		
 		except:FileNotFoundError
 		else:
-
 			print("no any file found")
-
-
-	return 
+	return
 
 
 '''Delete temporary file form temp foleder'''
 def temp_delete():
 	media=settings.MEDIA_ROOT+"/temp"
 	for files in os.listdir(media):
-		endmp4=re.search(".mp4$",files)
-		endavi=re.search(".avi$",files)
-		endjpeg=re.search(".jpeg$",files)
+		endmp4=re.search(".mp4",files)
+		endavi=re.search(".avi",files)
+		endjpeg=re.search(".jpeg",files)
 		try:
 
-			if endjpeg:
+			if endwebm:
 				os.remove(media+"/"+files)
 			if endmp4:
 				os.remove(media+"/"+files)
@@ -783,19 +776,34 @@ def temp_delete():
 			print("no such file in temporary folder")
 
 
-	return 
+	return files
 
 
 
 
+def merger(audioinput, videoinput):
+	path=settings.MEDIA_ROOT+"/temp"
+	input_file=location+"/"+files
+	audio_file=audioinput
+	output_file=path+"/"+"media/"+"/save"+"/"+comment.video_file.url[13::]
+	'''COMMAND FOR MERGE AUDIO AND VIDEO FILES'''
+	com_file = FFmpeg(inputs={input_file: None,audio_file:None},outputs={output_file: '-shortest'})
+	com_file.run()
+	return output_file    
+
+
+
+
+
+#Cannot resolve keyword 'document' into field. Choices are: audiofile, audiofile_id, created_at, id, status, user, user_id, video_file, videocomment, videofile_name, videoheart, videolike, videoshare
 #Hash function
 class Hash_Updata(APIView):
 
 	def get(self, request, format="json"):
-		hashtag = request.GET.get('hash_tag')
+		pk = request.GET.get('id')
 		user_id = request.GET.get('user_id')
-		if hashtag:
-			queryset = Hastag.objects.filter(name__iexact=hashtag)
+		if pk:
+			queryset = Hastag.objects.filter(id=pk)
 		elif user_id:
 			queryset = Hastag.objects.filter(user__id=user_id)
 		else:
@@ -807,10 +815,8 @@ class Hash_Updata(APIView):
 				"user_id":data.user.id,
 				"username":data.user.username,
 				"hash_tag_name":data.name,
-				#"hastag video":data.,
 				"hash_tag_count":data.count,
-				"hash_status":data.status,
-				
+				"hash_status":data.status,				
 			}
 
 		return Response(response.values(), status=status.HTTP_200_OK)
@@ -843,16 +849,72 @@ class Hash_Updata(APIView):
 			return Response(serializer.data, status=status.HTTP_200_OK)
 		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 	def delete(self, request):
 		queryset = get_object_or_404(Hastag, id=request.GET.get('id'))
 		queryset.delete()
 		return Response({"Message":"audio file data hasbeen deleted successful"}, status=status.HTTP_204_NO_CONTENT)
 
 
+class Finding_Video_By_Hashtag(APIView):
+	def get(self, request, format="json"):
+		pk = request.GET.get('id')
+		user_id = request.GET.get('user_id')
+		hashtag = request.GET.get('hastag')
+		print(hashtag)
+		if pk:
+			queryset = VideoFile.objects.filter(id=pk)
+		elif hashtag:
+			#queryset = VideoFile.objects.filter(user__id=user_id)
+			queryset = VideoFile.objects.filter(video_discription__iexact=hashtag)
+			print(queryset)
+		else:
+			queryset = VideoFile.objects.filter(user__id=user_id)
+		response={}
+
+		for data in queryset:
+			response[data.id] = {
+				"id": data.id,
+				"user_id":data.user.id,
+				"username":data.user.username,
+				"audiofile_name":data.audiofile.audiofile_name,
+				"audio_file":data.audiofile.audio_file.url if data.audiofile.audio_file else None,
+				"videofile_name":data.videofile_name,
+				"video_file":data.video_file.url if data.video_file else None,
+				"hash_tag":data.video_discription,
+				
+			}
+
+		return Response(response.values(), status=status.HTTP_200_OK)
 
 
+class language(APIView):
+	def post(self, request, format="json"):
+		data = request.data
+		data['status'] = True
+		serializer = LanguageSerialzers(data = data)
+		if serializer.is_valid():
+			serializer.save()
+			return Response(serializer.data, status=status.HTTP_200_OK)
+		return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+	
 
+	def get(self, request, format="json"):
+		name = request.GET.get('name')
+		if name:
+			queryset = language.objects.filter(name=name)
+		else:
+			queryset = language.objects.all()
+		response={}
+		for data in queryset:
+			response[data.id] = {
+				"id": data.id,
+				"name":data.name,
+				"status":data.status,
+				"created_at":data.created_at,
+			}
 
+		return Response(response.values(), status=status.HTTP_200_OK)
 
-
+	
 
