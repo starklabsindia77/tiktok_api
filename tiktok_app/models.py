@@ -5,9 +5,9 @@ class UserDetails(models.Model):
 	user         = models.OneToOneField(User, null=True, blank=True,on_delete=models.CASCADE)
 	phone_number = models.CharField(max_length=20,null=True)
 	image        = models.ImageField(null=True, blank=True, upload_to='image/')
-	bio          = models.CharField(max_length=200, null=True)
-	youtube      = models.CharField(max_length=200, null=True)
-	instagram    = models.CharField(max_length=200, null=True)
+	bio          = models.CharField(max_length=200, default="bio")
+	youtube      = models.CharField(max_length=200, default="youtube")
+	instagram    = models.CharField(max_length=200, default="instagram")
 
 	class Meta:
 		unique_together = ("phone_number",)
